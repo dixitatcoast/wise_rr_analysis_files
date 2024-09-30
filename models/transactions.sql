@@ -5,7 +5,7 @@
     )
 }}
 with
-    cte as (
+    updated_txns as (
         select
             transaction_id,
             transaction_date,
@@ -31,4 +31,4 @@ select
         WHEN COUNT(*) OVER (PARTITION BY transaction_id) = 1 THEN TRUE
         ELSE FALSE
     END AS is_unique_txn
-from cte
+from updated_txns
