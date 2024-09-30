@@ -4,7 +4,7 @@
         tags=["audit"]
     )
 }}
-
+with cust_txns as (
 select 
 cust.*, 
 txn.transaction_id,
@@ -15,11 +15,10 @@ txn.currency_route,
 txn.source_currency, 
 txn.amount_gbp*s_exchange.exchange_rate as source_amount,
 txn.destination_currency,
-round(source_amount * (1- 0.0064)*exchange_rates.exchange_rate,2) as destination_amount ,
-source_amount * (0.0064) as wise_mid_market_fees,
 txn.transaction_type ,
 txn.is_positive_amount,
 txn.is_unique_txn,
+exchange_rates.exchange_rate AS dest_exchange_rate,
 transaction_date >= customer_since_date as is_after_transaction,
         CASE 
         WHEN 
@@ -36,3 +35,25 @@ transaction_date >= customer_since_date as is_after_transaction,
     left join {{ ref('exchange_rates') }} as exchange_rates on exchange_rates.currency_route=txn.currency_route
     left join {{ ref('exchange_rates') }} as s_exchange on s_exchange.currency_route=txn.gbp_currency_route 
   order by customer_id, transaction_id
+)
+select customer_id,
+customer_type,
+current_address_country,
+customer_since_date,
+transaction_id,
+gbp_currency_route,
+amount_gbp,
+transaction_date,
+currency_route,
+source_currency,
+source_amount,
+transaction_type,
+is_positive_amount,
+is_unique_txn,
+dest_exchange_rate,
+is_after_transaction,
+is_local_entity_txn,
+is_valid_transaction,
+round(source_amount * (1- 0.0064)*dest_exchange_rate,2) as destination_amount ,
+source_amount * (0.0064) as wise_mid_market_fees
+from cust_txns
